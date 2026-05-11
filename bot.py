@@ -126,3 +126,16 @@ async def untimeout(interaction: discord.Interaction, member: discord.Member):
 @bot.tree.command(name="clear", description="Delete a number of messages from this channel")
 async def clear(interaction: discord.Interaction, amount: int):
     if not interaction.user.guild_permissions.manage_messages:
+        return await interaction.response.send_message("❌ You don't have permission to clear messages.", ephemeral=True)
+    await interaction.response.defer(ephemeral=True)
+    deleted = await interaction.channel.purge(limit=amount)
+    await interaction.followup.send(f"🧹 Deleted {len(deleted)} messages.", ephemeral=True)
+
+@bot.event
+async def on_ready():
+    guild = discord.Object(id=GUILD_ID)
+    await bot.tree.sync(guild=guild)
+    print(f"Synced commands for guild {GUILD_ID}")
+    print(f"Logged in as {bot.user}")
+
+bot.run(TOKEN)
