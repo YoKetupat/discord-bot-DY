@@ -13,6 +13,10 @@ FRIENDLY_CHANNEL_ID = 1497522011872690217
 VOTE_FILE = "friendly.json"
 MOD_ROLE_ID = 1497531521597182123
 
+FANS_ROLE = 1497343156214173910
+ACADEMY_ROLE = 1497348156164276316
+MAIN_TEAM_ROLE = 1497351283642859550
+
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
@@ -43,26 +47,42 @@ async def friendly(interaction: discord.Interaction):
     channel = bot.get_channel(FRIENDLY_CHANNEL_ID)
 
     embed = discord.Embed(
-        title="🏆 DARK YANITED | FRIENDLY",
+        title="⚽  DARK YANITED  |  FRIENDLY",
         description=(
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "⚽ **FRIENDLY**\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            "4️⃣ **REACTS NEEDED** — 4+ to start!\n\n"
-            "📋 **SCRIM NOTE**\n"
-            "> If you have to leave, **UNREACT**\n"
-            "> Come on, react fast!! ‼️\n\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "<@&FANS_ROLE> <@&ACADEMY_ROLE> <@&MAIN_ROLE>"
+            "```\n"
+            "  ____  _   _   ___  ____  _____\n"
+            " |  _ \\| | | | / _ \\|  _ \\| ____|\n"
+            " | | | | |_| || | | | |_) |  _|\n"
+            " |_| |_|\\__, ||_| |_|____/|_____|\n"
+            "        |___/\n"
+            "```\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            "🏟️  **FRIENDLY MATCH — OPEN FOR SIGNUPS**\n\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            "4️⃣  **4 REACTS NEEDED TO START**\n"
+            "⚡  React fast — spots fill quickly!\n\n"
+            "📋  **SCRIM RULES**\n"
+            "```\n"
+            "  ➤  If you need to leave → UNREACT\n"
+            "  ➤  Don't react if you can't commit\n"
+            "  ➤  Respect all players\n"
+            "```\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            "🔔  **REACT BELOW TO JOIN** ⬇️"
         ),
-        color=0xFF4500
+        color=0xFF6000
     )
-    embed.set_footer(text="DARK YANITED FC • React to join!")
+
+    embed.set_footer(text="DARK YANITED FC  •  React ⚽ to join the match!")
+    embed.set_thumbnail(url="https://i.imgur.com/4M34hi2.png")
+
+    pings = f"<@&{FANS_ROLE}> <@&{ACADEMY_ROLE}> <@&{MAIN_TEAM_ROLE}>"
 
     await interaction.response.send_message("✅ Friendly posted!", ephemeral=True)
 
     if channel:
-        await channel.send(embed=embed)
+        msg = await channel.send(content=pings, embed=embed)
+        await msg.add_reaction("⚽")
 
 @bot.tree.command(name="ban", description="Ban a member from the server")
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
