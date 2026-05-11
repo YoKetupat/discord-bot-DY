@@ -11,6 +11,7 @@ TOKEN = os.environ["TOKEN"]
 GUILD_ID = 1492213186902888510
 FRIENDLY_CHANNEL_ID = 1497522011872690217
 VOTE_FILE = "friendly.json"
+MOD_ROLE_ID = 1497531521597182123
 
 intents = discord.Intents.default()
 intents.members = True
@@ -31,31 +32,37 @@ def save_votes(data):
     with open(VOTE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-@bot.tree.command(name="friendly", description="Vote for a friendly match!")
+def is_mod(interaction: discord.Interaction):
+    return any(role.id >= MOD_ROLE_ID for role in interaction.user.roles)
+
+@bot.tree.command(name="friendly", description="Post a friendly match announcement!")
 async def friendly(interaction: discord.Interaction):
-    data = load_votes()
-    data["total"] = data.get("total", 0) + 1
-    votes = data["total"]
-    save_votes(data)
+    if not is_mod(interaction):
+        return await interaction.response.send_message("❌ You don't have permission to use this.", ephemeral=True)
+
+    channel = bot.get_channel(FRIENDLY_CHANNEL_ID)
 
     embed = discord.Embed(
-        title="🌟 Friendly Match Vote",
-        description=f"{interaction.user.mention} wants a friendly match!\n\n**Votes:** `{votes}/5`",
-        color=0x5865F2
+        title="🏆 DARK YANITED | FRIENDLY",
+        description=(
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "⚽ **FRIENDLY**\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "4️⃣ **REACTS NEEDED** — 4+ to start!\n\n"
+            "📋 **SCRIM NOTE**\n"
+            "> If you have to leave, **UNREACT**\n"
+            "> Come on, react fast!! ‼️\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "<@&FANS_ROLE> <@&ACADEMY_ROLE> <@&MAIN_ROLE>"
+        ),
+        color=0xFF4500
     )
-    await interaction.response.send_message(embed=embed)
+    embed.set_footer(text="DARK YANITED FC • React to join!")
 
-    if votes >= 5:
-        data["total"] = 0
-        save_votes(data)
-        channel = bot.get_channel(FRIENDLY_CHANNEL_ID)
-        if channel:
-            event_embed = discord.Embed(
-                title="⚽ Friendly Match Incoming!",
-                description="🔥 **5 votes reached!**\nA community friendly match is starting now!",
-                color=0x00ff99
-            )
-            await channel.send(content="@everyone", embed=event_embed)
+    await interaction.response.send_message("✅ Friendly posted!", ephemeral=True)
+
+    if channel:
+        await channel.send(embed=embed)
 
 @bot.tree.command(name="ban", description="Ban a member from the server")
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
