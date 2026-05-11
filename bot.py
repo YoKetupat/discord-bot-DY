@@ -17,6 +17,8 @@ FANS_ROLE = 1497343156214173910
 ACADEMY_ROLE = 1497348156164276316
 MAIN_TEAM_ROLE = 1497351283642859550
 
+LOGO_URL = "https://media.discordapp.net/attachments/1497519739776532630/1503483685368889496/file_000000000f147243bc92c61df07bf5d1_1.png?ex=6a0383cb&is=6a02324b&hm=d0b6809e1864ca9d1ab289256ea999374a92ffe904010de0a24a5250de9f86ee&=&format=webp&quality=lossless&width=847&height=847"
+
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
@@ -50,11 +52,12 @@ async def friendly(interaction: discord.Interaction):
         title="⚽  DARK YANITED  |  FRIENDLY",
         description=(
             "```\n"
-            "  ____  _   _   ___  ____  _____\n"
-            " |  _ \\| | | | / _ \\|  _ \\| ____|\n"
-            " | | | | |_| || | | | |_) |  _|\n"
-            " |_| |_|\\__, ||_| |_|____/|_____|\n"
-            "        |___/\n"
+            "██████╗ ██╗   ██╗\n"
+            "██╔══██╗╚██╗ ██╔╝\n"
+            "██║  ██║ ╚████╔╝ \n"
+            "██║  ██║  ╚██╔╝  \n"
+            "██████╔╝   ██║   \n"
+            "╚═════╝    ╚═╝   \n"
             "```\n"
             "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
             "🏟️  **FRIENDLY MATCH — OPEN FOR SIGNUPS**\n\n"
@@ -70,11 +73,11 @@ async def friendly(interaction: discord.Interaction):
             "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
             "🔔  **REACT BELOW TO JOIN** ⬇️"
         ),
-        color=0xFF6000
+        color=0xAA0000
     )
 
+    embed.set_thumbnail(url=LOGO_URL)
     embed.set_footer(text="DARK YANITED FC  •  React ⚽ to join the match!")
-    embed.set_thumbnail(url="https://i.imgur.com/4M34hi2.png")
 
     pings = f"<@&{FANS_ROLE}> <@&{ACADEMY_ROLE}> <@&{MAIN_TEAM_ROLE}>"
 
@@ -123,16 +126,3 @@ async def untimeout(interaction: discord.Interaction, member: discord.Member):
 @bot.tree.command(name="clear", description="Delete a number of messages from this channel")
 async def clear(interaction: discord.Interaction, amount: int):
     if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message("❌ You don't have permission to clear messages.", ephemeral=True)
-    await interaction.response.defer(ephemeral=True)
-    deleted = await interaction.channel.purge(limit=amount)
-    await interaction.followup.send(f"🧹 Deleted {len(deleted)} messages.", ephemeral=True)
-
-@bot.event
-async def on_ready():
-    guild = discord.Object(id=GUILD_ID)
-    await bot.tree.sync(guild=guild)
-    print(f"Synced commands for guild {GUILD_ID}")
-    print(f"Logged in as {bot.user}")
-
-bot.run(TOKEN)
