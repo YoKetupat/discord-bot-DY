@@ -181,6 +181,51 @@ async def friendly(interaction: discord.Interaction):
         await msg.add_reaction("⚽")
 
 # -----------------------------
+# TEST VIDEO DM
+# -----------------------------
+
+@bot.tree.command(name="test-vid", description="Test the TikTok DM notification")
+async def test_vid(interaction: discord.Interaction):
+    if not is_mod(interaction):
+        return await interaction.response.send_message("❌ You don't have permission to use this.", ephemeral=True)
+
+    guild = bot.get_guild(GUILD_ID)
+    if not guild:
+        return await interaction.response.send_message("❌ Could not find server.", ephemeral=True)
+
+    embed = discord.Embed(
+        title="🎵  DARK YANITED  |  NEW VIDEO",
+        description=(
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            "🧪  **THIS IS A TEST MESSAGE**\n\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            "📲  **A NEW TIKTOK HAS JUST DROPPED!**\n\n"
+            "🔗  **Watch it here:**\nhttps://www.tiktok.com/@darkyanitedtpss\n\n"
+            "❤️  **Like, comment & share!**\n"
+            "🔔  Turn on notifications so you never miss a drop!\n\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+        ),
+        color=0xAA0000
+    )
+    embed.set_thumbnail(url=LOGO_URL)
+    embed.set_footer(text="DARK YANITED FC  •  Follow us on TikTok!")
+
+    await interaction.response.send_message("✅ Sending test DMs...", ephemeral=True)
+
+    sent = 0
+    failed = 0
+    for member in guild.members:
+        if member.bot:
+            continue
+        try:
+            await member.send(embed=embed)
+            sent += 1
+        except:
+            failed += 1
+
+    await interaction.followup.send(f"✅ Test done! {sent} sent, {failed} failed.", ephemeral=True)
+
+# -----------------------------
 # MODERATION COMMANDS
 # -----------------------------
 
