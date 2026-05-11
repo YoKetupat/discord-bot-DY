@@ -5,7 +5,7 @@ import json
 import os
 import requests
 from bs4 import BeautifulSoup
-import asyncio
+from discord.ext import tasks
 
 # -----------------------------
 # CONFIGURATION
@@ -13,7 +13,6 @@ import asyncio
 TOKEN = os.environ["TOKEN"]
 GUILD_ID = 1492213186902888510
 FRIENDLY_CHANNEL_ID = 1497522011872690217
-TIKTOK_CHANNEL_ID = 1497515462102089829
 VOTE_FILE = "friendly.json"
 LAST_VIDEO_FILE = "last_video.json"
 MOD_ROLE_ID = 1497531521597182123
@@ -75,7 +74,6 @@ def get_latest_tiktok():
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Find the first video link
         links = soup.find_all("a", href=True)
         for link in links:
             href = link["href"]
@@ -98,8 +96,9 @@ async def check_tiktok():
         return
 
     save_last_video(video_id)
-    channel = bot.get_channel(TIKTOK_CHANNEL_ID)
-    if not channel:
+
+    guild = bot.get_guild(GUILD_ID)
+    if not guild:
         return
 
     embed = discord.Embed(
@@ -118,7 +117,18 @@ async def check_tiktok():
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_footer(text="DARK YANITED FC  •  Follow us on TikTok!")
 
-    await channel.send(embed=embed)
+    sent = 0
+    failed = 0
+    for member in guild.members:
+        if member.bot:
+            continue
+        try:
+            await member.send(embed=embed)
+            sent += 1
+        except:
+            failed += 1
+
+    print(f"TikTok DMs sent: {sent} success, {failed} failed")
 
 # -----------------------------
 # FRIENDLY SYSTEM
