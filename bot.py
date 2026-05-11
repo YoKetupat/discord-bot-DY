@@ -3,6 +3,9 @@ from discord.ext import commands
 from datetime import timedelta
 import json
 import os
+import requests
+from bs4 import BeautifulSoup
+import asyncio
 
 # -----------------------------
 # CONFIGURATION
@@ -10,8 +13,11 @@ import os
 TOKEN = os.environ["TOKEN"]
 GUILD_ID = 1492213186902888510
 FRIENDLY_CHANNEL_ID = 1497522011872690217
+TIKTOK_CHANNEL_ID = 1497515462102089829
 VOTE_FILE = "friendly.json"
+LAST_VIDEO_FILE = "last_video.json"
 MOD_ROLE_ID = 1497531521597182123
+TIKTOK_USERNAME = "darkyanitedtpss"
 
 FANS_ROLE = 1497343156214173910
 ACADEMY_ROLE = 1497348156164276316
@@ -27,6 +33,10 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 warnings = {}
 
+# -----------------------------
+# DATA PERSISTENCE
+# -----------------------------
+
 def load_votes():
     try:
         with open(VOTE_FILE, "r") as f:
@@ -38,8 +48,81 @@ def save_votes(data):
     with open(VOTE_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
+def load_last_video():
+    try:
+        with open(LAST_VIDEO_FILE, "r") as f:
+            return json.load(f).get("last_video_id")
+    except:
+        return None
+
+def save_last_video(video_id):
+    with open(LAST_VIDEO_FILE, "w") as f:
+        json.dump({"last_video_id": video_id}, f)
+
 def is_mod(interaction: discord.Interaction):
     return any(role.id >= MOD_ROLE_ID for role in interaction.user.roles)
+
+# -----------------------------
+# TIKTOK CHECKER
+# -----------------------------
+
+def get_latest_tiktok():
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        url = f"https://www.tiktok.com/@{TIKTOK_USERNAME}"
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Find the first video link
+        links = soup.find_all("a", href=True)
+        for link in links:
+            href = link["href"]
+            if "/video/" in href:
+                video_id = href.split("/video/")[-1].split("?")[0]
+                video_url = f"https://www.tiktok.com/@{TIKTOK_USERNAME}/video/{video_id}"
+                return video_id, video_url
+    except Exception as e:
+        print(f"TikTok check failed: {e}")
+    return None, None
+
+@tasks.loop(minutes=5)
+async def check_tiktok():
+    video_id, video_url = get_latest_tiktok()
+    if not video_id:
+        return
+
+    last_video_id = load_last_video()
+    if video_id == last_video_id:
+        return
+
+    save_last_video(video_id)
+    channel = bot.get_channel(TIKTOK_CHANNEL_ID)
+    if not channel:
+        return
+
+    embed = discord.Embed(
+        title="🎵  DARK YANITED  |  NEW VIDEO",
+        description=(
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            "📲  **A NEW TIKTOK HAS JUST DROPPED!**\n\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n"
+            f"🔗  **Watch it here:**\n{video_url}\n\n"
+            "❤️  **Like, comment & share!**\n"
+            "🔔  Turn on notifications so you never miss a drop!\n\n"
+            "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+        ),
+        color=0xAA0000
+    )
+    embed.set_thumbnail(url=LOGO_URL)
+    embed.set_footer(text="DARK YANITED FC  •  Follow us on TikTok!")
+
+    await channel.send(embed=embed)
+
+# -----------------------------
+# FRIENDLY SYSTEM
+# -----------------------------
 
 @bot.tree.command(name="friendly", description="Post a friendly match announcement!")
 async def friendly(interaction: discord.Interaction):
@@ -87,6 +170,10 @@ async def friendly(interaction: discord.Interaction):
         msg = await channel.send(content=pings, embed=embed)
         await msg.add_reaction("⚽")
 
+# -----------------------------
+# MODERATION COMMANDS
+# -----------------------------
+
 @bot.tree.command(name="ban", description="Ban a member from the server")
 async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "No reason"):
     if not interaction.user.guild_permissions.ban_members:
@@ -131,10 +218,15 @@ async def clear(interaction: discord.Interaction, amount: int):
     deleted = await interaction.channel.purge(limit=amount)
     await interaction.followup.send(f"🧹 Deleted {len(deleted)} messages.", ephemeral=True)
 
+# -----------------------------
+# STARTUP & SYNC
+# -----------------------------
+
 @bot.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
     await bot.tree.sync(guild=guild)
+    check_tiktok.start()
     print(f"Synced commands for guild {GUILD_ID}")
     print(f"Logged in as {bot.user}")
 
