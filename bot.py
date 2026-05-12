@@ -279,6 +279,7 @@ async def clear(interaction: discord.Interaction, amount: int):
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
     guild = discord.Object(id=GUILD_ID)
     await bot.tree.sync(guild=guild)
     check_tiktok.start()
