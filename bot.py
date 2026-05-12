@@ -6,6 +6,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from discord.ext import tasks
+import asyncio
+import time
 
 # -----------------------------
 # CONFIGURATION
@@ -60,6 +62,71 @@ def save_last_video(video_id):
 
 def is_mod(interaction: discord.Interaction):
     return any(role.id >= MOD_ROLE_ID for role in interaction.user.roles)
+
+# -----------------------------
+# DM SENDER WITH PROGRESS
+# -----------------------------
+
+async def send_dms(interaction: discord.Interaction, embed: discord.Embed, is_followup: bool = False):
+    guild = bot.get_guild(GUILD_ID)
+    if not guild:
+        msg = "❌ Could not find server."
+        if is_followup:
+            await interaction.followup.send(msg, ephemeral=True)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
+        return
+
+    members = [m for m in guild.members if not m.bot]
+    total = len(members)
+    sent = 0
+    failed = 0
+    start_time = time.time()
+
+    if is_followup:
+        progress_msg = await interaction.followup.send(
+            f"📤 Sending DMs... `0/{total}` | ⏳ Estimated time: calculating...",
+            ephemeral=True
+        )
+    else:
+        await interaction.response.send_message(
+            f"📤 Sending DMs... `0/{total}` | ⏳ Estimated time: calculating...",
+            ephemeral=True
+        )
+        progress_msg = await interaction.original_response()
+
+    for i, member in enumerate(members, 1):
+        try:
+            await member.send(embed=embed)
+            sent += 1
+        except:
+            failed += 1
+
+        await asyncio.sleep(1)
+
+        if i % 5 == 0 or i == total:
+            elapsed = time.time() - start_time
+            avg_time = elapsed / i
+            remaining = int(avg_time * (total - i))
+            mins, secs = divmod(remaining, 60)
+
+            if remaining > 0:
+                time_str = f"{mins}m {secs}s remaining"
+            else:
+                time_str = "almost done!"
+
+            await progress_msg.edit(content=(
+                f"📤 Sending DMs... `{i}/{total}`\n"
+                f"✅ Sent: `{sent}` | ❌ Failed: `{failed}`\n"
+                f"⏳ {time_str}"
+            ))
+
+    await progress_msg.edit(content=(
+        f"✅ **Done!**\n"
+        f"📤 Sent: `{sent}/{total}`\n"
+        f"❌ Failed (DMs closed): `{failed}`\n"
+        f"⏱️ Took: `{int(time.time() - start_time)}s`"
+    ))
 
 # -----------------------------
 # TIKTOK CHECKER
@@ -127,6 +194,7 @@ async def check_tiktok():
             sent += 1
         except:
             failed += 1
+        await asyncio.sleep(1)
 
     print(f"TikTok DMs sent: {sent} success, {failed} failed")
 
@@ -189,10 +257,6 @@ async def test_vid(interaction: discord.Interaction):
     if not is_mod(interaction):
         return await interaction.response.send_message("❌ You don't have permission to use this.", ephemeral=True)
 
-    guild = bot.get_guild(GUILD_ID)
-    if not guild:
-        return await interaction.response.send_message("❌ Could not find server.", ephemeral=True)
-
     embed = discord.Embed(
         title="🎵  DARK YANITED  |  NEW VIDEO",
         description=(
@@ -210,20 +274,7 @@ async def test_vid(interaction: discord.Interaction):
     embed.set_thumbnail(url=LOGO_URL)
     embed.set_footer(text="DARK YANITED FC  •  Follow us on TikTok!")
 
-    await interaction.response.send_message("✅ Sending test DMs...", ephemeral=True)
-
-    sent = 0
-    failed = 0
-    for member in guild.members:
-        if member.bot:
-            continue
-        try:
-            await member.send(embed=embed)
-            sent += 1
-        except:
-            failed += 1
-
-    await interaction.followup.send(f"✅ Test done! {sent} sent, {failed} failed.", ephemeral=True)
+    await send_dms(interaction, embed)
 
 # -----------------------------
 # MODERATION COMMANDS
